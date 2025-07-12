@@ -1,184 +1,314 @@
-# AI-Powered Content Moderation with Visual Embeddings (CLIP + Supabase)
+<h1 align="center">
+    🎬 AI Clip Content Analyzer
+</h1>
+<p align="center">
+    <p align="center">Enterprise-grade video content moderation with AI-powered frame extraction and analysis</p>
+    <br>
+</p>
 
-## 🎥 Project Overview
+<h4 align="center">
+    <a href="#-quick-start">Quick Start</a> | 
+    <a href="#-class-based-architecture">Architecture</a> | 
+    <a href="#-features">Features</a> | 
+    <a href="#-usage">Usage</a>
+</h4>
 
-This project is a production-ready content moderation system that detects inappropriate visual content in media clips using OpenAI's CLIP model. The system features enterprise-grade architecture with class-based design, rate limiting, and comprehensive error handling.
+<h4 align="center">
+    <a href="https://github.com/ahluwalij/clip-content-analyzer">
+        <img src="https://img.shields.io/github/stars/ahluwalij/clip-content-analyzer?style=social" alt="GitHub Stars">
+    </a>
+    <a href="https://github.com/ahluwalij/clip-content-analyzer/releases">
+        <img src="https://img.shields.io/github/v/release/ahluwalij/clip-content-analyzer?style=flat-square" alt="Latest Release">
+    </a>
+    <a href="https://www.python.org/downloads/">
+        <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python Version">
+    </a>
+    <a href="https://supabase.com/">
+        <img src="https://img.shields.io/badge/Database-Supabase-green?style=flat-square&logo=supabase" alt="Supabase">
+    </a>
+    <a href="https://github.com/ahluwalij/clip-content-analyzer/blob/main/LICENSE">
+        <img src="https://img.shields.io/github/license/ahluwalij/clip-content-analyzer?style=flat-square" alt="License">
+    </a>
+</h4>
 
-## 🏗️ Architecture
+---
 
-### Class-Based Design (Enterprise Grade)
-- **DatabaseManager**: Centralized database operations with connection pooling
-- **VideoDownloader**: Rate-limited downloads with progress tracking (5 requests/min)
-- **FrameExtractor**: Resource-managed video processing with validation
-- **VideoProcessor**: Main orchestrator with dependency injection
-- **ProcessingResult**: Structured operation results with metrics
+## 🚀 What This Does
 
-### Database (Supabase)
-- **Tech Stack:** Supabase (PostgreSQL + RESTful API)
-- **Table:** `media_clips`
-  - `id`: UUID – Unique identifier for the clip
-  - `title`: Text – Descriptive title of the clip
-  - `clip_path`: Text – URL to the media clip in Supabase Storage
-  - `source_type`: Text – Source type (e.g., "sports", "movie", "user_uploaded")
+AI Clip Content Analyzer provides:
 
-### Backend Processing
-- **Tech Stack:** Python with class-based architecture
-- **Libraries:**
-  - `moviepy` for frame extraction
-  - `supabase-py` for database operations
-  - `requests` with rate limiting for downloads
-  - `PIL` for image processing
-  - `python-dotenv` for environment management
-  - `validators` for input validation
-  - `ratelimit` for download throttling
+- **🎯 Intelligent Frame Extraction** - Extract frames at optimal video timestamps (25%, 50%, 75%)
+- **⚡ Rate-Limited Downloads** - Respectful API usage with 5 requests/minute throttling  
+- **🏗️ Enterprise Architecture** - Class-based design with dependency injection and SOLID principles
+- **🔒 Security First** - Input validation, file size limits, and environment-based configuration
+- **📊 Comprehensive Monitoring** - Real-time progress tracking, health checks, and detailed analytics
+- **🛡️ Robust Error Handling** - Graceful failures with specific exceptions and automatic cleanup
 
-## 🚀 Features
+[**🎯 Jump to Quick Start**](#-quick-start) <br>
+[**🏗️ Jump to Architecture Guide**](#-class-based-architecture)
 
-**🔒 Security & Validation:**
-- Environment variable-based configuration
-- Input validation and sanitization  
-- File size and URL validation
-- Rate limiting to prevent API abuse
+> [!IMPORTANT]
+> This system requires Python 3.10+ and a Supabase database. Set up your `.env` file before running.
 
-**🏗️ Enterprise Architecture:**
-- Class-based design with dependency injection
-- Single responsibility principle implementation
-- Comprehensive error handling with specific exceptions
-- Resource cleanup with context managers
+---
 
-**📊 Monitoring & Analytics:**
-- Structured logging with configurable levels
-- Processing statistics and success rate tracking
-- Download speed monitoring and performance metrics
-- System health checks with component validation
+## 🚀 Quick Start
 
-**⚡ Performance Features:**
-- Rate limiting (5 downloads per minute)
-- Progress callbacks for operations
-- Connection pooling and session management
-- Automatic retry with exponential backoff
+<a target="_blank" href="https://github.com/ahluwalij/clip-content-analyzer">
+  <img src="https://img.shields.io/badge/Clone-Repository-blue?style=for-the-badge&logo=github" alt="Clone Repository"/>
+</a>
 
-## 📦 Installation
+```bash
+# Clone the repository
+git clone https://github.com/ahluwalij/clip-content-analyzer.git
+cd clip-content-analyzer
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/ahluwalij/clip-content-analyzer.git
-   cd clip-content-analyzer
-   ```
+# Install dependencies  
+pip install -r requirements.txt
 
-2. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+# Configure environment
+cp .env.example .env
+# Edit .env with your Supabase credentials
 
-3. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env file with your actual values
-   ```
+# Run the application
+python backend/embedding_retrieval/main.py
+```
 
-4. **Set up Supabase:**
-   - Create a Supabase project
-   - Create a `media_clips` table with the schema above
-   - Upload videos to Supabase Storage
-   - Add your Supabase URL and API key to the `.env` file
+### Basic Usage
+
+```python
+from video_processor import VideoProcessor
+from database_manager import DatabaseManager
+
+# Initialize with dependency injection
+processor = VideoProcessor()
+
+# Process all clips from database
+results = processor.process_all_clips()
+
+# Check results
+for clip_id, result in results.items():
+    if result.success:
+        print(f"✅ {result.clip_title}: {result.frames_extracted} frames")
+    else:
+        print(f"❌ {result.clip_title}: {result.error_message}")
+```
+
+### Response Format
+
+```python
+ProcessingResult(
+    clip_id="550e8400-e29b-41d4-a716-446655440000",
+    clip_title="Sample Video",
+    success=True,
+    frames_extracted=3,
+    frame_paths=["clip_frame_1.jpg", "clip_frame_2.jpg", "clip_frame_3.jpg"],
+    processing_time=12.45,
+    error_message=None
+)
+```
+
+---
+
+## 🏗️ Class-Based Architecture
+
+<div align="center">
+
+| Component | Purpose | Features |
+|-----------|---------|----------|
+| **🗄️ DatabaseManager** | Database Operations | Connection pooling, health checks, query optimization |
+| **⬇️ VideoDownloader** | Rate-Limited Downloads | 5 req/min throttling, progress tracking, session reuse |
+| **🎞️ FrameExtractor** | Video Processing | Resource management, validation, multiple extraction modes |
+| **🎬 VideoProcessor** | Main Orchestrator | Dependency injection, statistics, health monitoring |
+| **📊 ProcessingResult** | Result Objects | Structured feedback, metrics, error context |
+
+</div>
+
+### 🎯 Enterprise Features
+
+```python
+# Dependency injection for testing
+processor = VideoProcessor(
+    database_manager=MockDatabaseManager(),
+    video_downloader=MockVideoDownloader(),
+    frame_extractor=MockFrameExtractor()
+)
+
+# Health checks before processing
+health = processor.health_check()
+if not all(health.values()):
+    logger.error(f"Unhealthy components: {health}")
+
+# Rate limiting with automatic backoff
+@sleep_and_retry
+@limits(calls=5, period=60)
+def download_with_rate_limit(url):
+    return requests.get(url)
+```
+
+---
+
+## ✨ Features
+
+<div align="center">
+
+### 🔒 **Security & Validation**
+Environment variables • Input sanitization • File size limits • Rate limiting
+
+### 🏗️ **Enterprise Architecture** 
+Dependency injection • SOLID principles • Resource cleanup • Error handling
+
+### 📊 **Monitoring & Analytics**
+Progress tracking • Health checks • Performance metrics • Success rates
+
+### ⚡ **Performance Optimized**
+Connection pooling • Automatic retry • Progress callbacks • Session reuse
+
+</div>
+
+---
 
 ## 🛠️ Usage
 
-### Main Application (Class-Based)
+### Class-Based Application (Recommended)
+
 ```bash
 python backend/embedding_retrieval/main.py
 ```
 
 **Features:**
-- Comprehensive health checks
-- Real-time progress tracking
-- Detailed processing summaries
-- Error reporting with context
+- 🏥 Comprehensive health checks
+- 📈 Real-time progress tracking  
+- 📋 Detailed processing summaries
+- 🚨 Error reporting with context
 
 ### Legacy Compatibility
+
 ```bash
 python backend/embedding_retrieval/combined_processor.py
 ```
 
-**Individual Components:**
-- **Configuration:** `config.py` - Environment management
-- **Database:** `database_manager.py` - Connection handling  
-- **Downloads:** `video_downloader.py` - Rate-limited downloads
-- **Frames:** `frame_extractor_class.py` - Video processing
-- **Orchestration:** `video_processor.py` - Main workflow
+### Processing Individual Clips
+
+```python
+from video_processor import VideoProcessor
+
+processor = VideoProcessor()
+
+# Process specific clip by ID
+result = processor.process_clip_by_id("clip-uuid-here")
+
+if result and result.success:
+    print(f"Extracted {result.frames_extracted} frames in {result.processing_time:.2f}s")
+```
+
+---
+
+## ⚙️ Configuration
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Database Configuration
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+
+# Processing Limits
+MAX_FILE_SIZE_MB=100
+TEMP_DIR=/tmp
+
+# Monitoring
+LOG_LEVEL=INFO
+```
+
+### Supabase Setup
+
+Create a `media_clips` table:
+
+```sql
+CREATE TABLE media_clips (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    clip_path TEXT NOT NULL,
+    source_type TEXT
+);
+```
+
+---
 
 ## 📁 Project Structure
 
 ```
 clip-content-analyzer/
-├── backend/
-│   └── embedding_retrieval/
-│       ├── config.py                    # Configuration management
-│       ├── database_manager.py          # Database operations class
-│       ├── video_downloader.py          # Rate-limited download class  
-│       ├── frame_extractor_class.py     # Frame extraction class
-│       ├── video_processor.py           # Main orchestrator class
-│       ├── main.py                      # Class-based entry point
-│       ├── combined_processor.py        # Legacy entry point
-│       ├── supabase_client.py          # Legacy database module
-│       ├── frame_extractor.py          # Legacy frame module
-│       └── process_clips.py            # Legacy processing module
-├── .env.example                         # Environment template
-├── .gitignore                          # Git ignore rules
-├── requirements.txt                    # Dependencies with rate limiting
+├── backend/embedding_retrieval/
+│   ├── 🆕 main.py                    # Class-based entry point
+│   ├── 🆕 database_manager.py        # Database operations class  
+│   ├── 🆕 video_downloader.py        # Rate-limited downloads
+│   ├── 🆕 frame_extractor_class.py   # Enhanced frame extraction
+│   ├── 🆕 video_processor.py         # Main orchestrator
+│   ├── config.py                     # Configuration management
+│   └── 📁 Legacy modules...          # Backward compatibility
+├── .env.example                      # Environment template
+├── requirements.txt                  # Dependencies + rate limiting
 └── README.md
 ```
 
-## ⚙️ Configuration
+---
 
-Environment variables (copy `.env.example` to `.env`):
+## 🎯 Why This Architecture?
 
-- `SUPABASE_URL`: Your Supabase project URL
-- `SUPABASE_KEY`: Your Supabase anonymous/service key
-- `MAX_FILE_SIZE_MB`: Maximum download size (default: 100MB)
-- `TEMP_DIR`: Temporary files directory (default: /tmp)
-- `LOG_LEVEL`: Logging verbosity (DEBUG, INFO, WARNING, ERROR)
+<div align="center">
 
-## 🎯 Architecture Benefits
+| **For Developers** | **For Operations** | **For Scalability** |
+|:---:|:---:|:---:|
+| Dependency injection for testing | Rate limiting prevents abuse | Modular design for extension |
+| Clear separation of concerns | Progress tracking for ops | Connection pooling for performance |
+| Comprehensive debugging | Automatic resource cleanup | Configurable limits & timeouts |
+| Health checks for validation | Detailed error reporting | Monitoring & metrics built-in |
 
-**For Developers:**
-- Dependency injection for easy testing
-- Clear separation of concerns
-- Comprehensive logging and debugging
-- Health checks for system validation
+</div>
 
-**For Operations:**
-- Rate limiting prevents API abuse
-- Progress tracking for long operations
-- Automatic resource cleanup
-- Detailed error reporting
+---
 
-**For Scalability:**  
-- Modular design for easy extension
-- Connection pooling for performance
-- Configurable limits and timeouts
-- Monitoring and metrics collection
+## 🔮 Roadmap
 
-## 🔮 Future Enhancements
+- [ ] 🤖 **CLIP Model Integration** - AI-powered content analysis
+- [ ] 🎯 **Similarity Scoring** - Cosine similarity for content matching  
+- [ ] 🌐 **Web Dashboard** - Real-time monitoring interface
+- [ ] 🐳 **Docker Support** - Containerized deployment
+- [ ] ☸️ **Kubernetes Ready** - Cloud-native scaling
+- [ ] 🔄 **CI/CD Pipeline** - Automated testing & deployment
 
-- [ ] CLIP model integration for embedding extraction
-- [ ] Cosine similarity comparison with flagged keywords
-- [ ] Content moderation results in database
-- [ ] Web dashboard for management
-- [ ] Real-time processing with webhooks
-- [ ] Docker containerization
-- [ ] Kubernetes deployment
-- [ ] CI/CD pipeline integration
+---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch  
-3. Implement changes with proper testing
-4. Follow the class-based architecture patterns
-5. Submit a pull request
+<div align="center">
+
+[![Contributors Welcome](https://img.shields.io/badge/Contributors-Welcome-brightgreen?style=for-the-badge)](https://github.com/ahluwalij/clip-content-analyzer/issues)
+
+</div>
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Follow** the class-based architecture patterns
+4. **Test** your changes thoroughly  
+5. **Submit** a pull request
+
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License. 
+<div align="center">
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+<br>
+
+**Made with ❤️ for the AI community**
+
+<br>
+
+[![GitHub](https://img.shields.io/badge/GitHub-ahluwalij-black?style=flat-square&logo=github)](https://github.com/ahluwalij)
+
+</div> 
