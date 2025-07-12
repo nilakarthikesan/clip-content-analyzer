@@ -1,26 +1,67 @@
-from supabase import create_client, Client
+"""Supabase client module for database operations.
+
+This module provides functions to interact with the Supabase database,
+specifically for fetching media clip metadata.
+"""
+
+import logging
+from typing import Any
+
+from supabase import Client, create_client
+
+from config import SUPABASE_KEY, SUPABASE_URL
+
+logger = logging.getLogger(__name__)
 
 
-SUPABASE_URL = "https://bbrvvbipmfdiyekyilbo.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJicnZ2YmlwbWZkaXlla3lpbGJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIwMzc5MzMsImV4cCI6MjA2NzYxMzkzM30.FBzWwcIrorGSHg49CV-nmEyNxZHnewwwL5QMu3Gofrs"
-
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("Please set SUPABASE_URL and SUPABASE_KEY.")
-
-# Initialize Supabase client
 def get_supabase_client() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Fetch all media clips from the database
-def fetch_media_clips():
-    supabase = get_supabase_client()
-    # queries the media_clips table and selects all columns 
-    response = supabase.table('media_clips').select('*').execute()
-    #print(response)
+    """Create and return a Supabase client instance.
     
-    return response.data
+    Returns:
+        Client: Configured Supabase client instance.
+        
+    Raises:
+        ValueError: If Supabase credentials are not properly configured.
+    """
+    try:
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as error:
+        logger.error(f"Failed to create Supabase client: {error}")
+        raise ValueError("Unable to initialize Supabase client") from error
+
+
+def fetch_media_clips() -> list[dict[str, Any]]:
+    """Fetch all media clips from the database.
+    
+    Returns:
+        list[dict[str, Any]]: List of media clip records from the database.
+        
+    Raises:
+        RuntimeError: If database query fails.
+    """
+    try:
+        supabase = get_supabase_client()
+        response = supabase.table('media_clips').select('*').execute()
+        
+        if response.data is None:
+            logger.warning("No media clips found in database")
+            return []
+            
+        logger.info(f"Successfully fetched {len(response.data)} media clips")
+        return response.data
+        
+    except Exception as error:
+        logger.error(f"Failed to fetch media clips: {error}")
+        raise RuntimeError("Database query failed") from error
+
 
 if __name__ == "__main__":
-    clips = fetch_media_clips()
-    for clip in clips:
-        print(clip) 
+    # Configure logging for standalone execution
+    logging.basicConfig(level=logging.INFO)
+    
+    try:
+        clips = fetch_media_clips()
+        for clip in clips:
+            print(f"Clip: {clip.get('title', 'Unknown')} - {clip.get('id', 'No ID')}")
+    except Exception as error:
+        print(f"Error: {error}") 

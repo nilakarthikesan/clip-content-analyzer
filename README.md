@@ -21,13 +21,19 @@ This project is a full-stack content moderation system that detects inappropriat
   - `supabase-py` to connect to database
   - `requests` to download videos from URLs
   - `PIL` for image processing
+  - `python-dotenv` for environment variable management
+  - `validators` for URL validation
 
 ## 🚀 Features
 
+- **Secure Configuration:** Environment variable-based configuration
 - **Frame Extraction:** Extracts frames at 25%, 50%, and 75% of video duration
 - **Database Integration:** Connects to Supabase to fetch video metadata
 - **Temporary File Management:** Downloads videos to temp files, processes them, and cleans up
-- **Modular Design:** Separate functions for different processing steps
+- **Input Validation:** URL validation and file size limits
+- **Comprehensive Logging:** Structured logging with configurable levels
+- **Error Handling:** Robust error handling with specific exception types
+- **Modular Design:** Separate modules for different processing steps
 
 ## 📦 Installation
 
@@ -39,17 +45,21 @@ This project is a full-stack content moderation system that detects inappropriat
 
 2. **Install Python dependencies:**
    ```bash
-   pip install supabase moviepy requests pillow numpy
+   pip install -r requirements.txt
    ```
 
-3. **Set up Supabase:**
+3. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env file with your actual values
+   ```
+
+4. **Set up Supabase:**
    - Create a Supabase project
    - Create a `media_clips` table with the schema above
    - Upload videos to Supabase Storage
    - Update the `clip_path` column with public URLs
-
-4. **Configure the application:**
-   - Update `SUPABASE_URL` and `SUPABASE_KEY` in `backend/embedding_retrieval/combined_processor.py`
+   - Add your Supabase URL and API key to the `.env` file
 
 ## 🛠️ Usage
 
@@ -61,16 +71,18 @@ python backend/embedding_retrieval/combined_processor.py
 This will:
 1. Connect to your Supabase database
 2. Fetch all video clips
-3. Download each video to a temporary file
+3. Download each video to a temporary file (with size validation)
 4. Extract 3 frames (at 25%, 50%, 75% of duration)
 5. Save frames as images
 6. Clean up temporary files
+7. Generate detailed logs and processing summary
 
 ### Individual Components
 
-- **Database Connection:** `supabase_client.py`
-- **Frame Extraction:** `frame_extractor.py`
-- **Video Processing:** `process_clips.py`
+- **Configuration:** `config.py` - Centralized configuration management
+- **Database Connection:** `supabase_client.py` - Secure database operations
+- **Frame Extraction:** `frame_extractor.py` - Video frame extraction with validation
+- **Video Processing:** `process_clips.py` - Complete processing pipeline
 
 ## 📁 Project Structure
 
@@ -78,13 +90,26 @@ This will:
 clip-content-analyzer/
 ├── backend/
 │   └── embedding_retrieval/
+│       ├── config.py               # Configuration management
 │       ├── supabase_client.py      # Database connection
 │       ├── frame_extractor.py      # Frame extraction logic
 │       ├── process_clips.py        # Video processing pipeline
-│       └── combined_processor.py   # All-in-one processor
-├── .gitignore
+│       └── combined_processor.py   # Main application entry point
+├── .env.example                    # Environment variable template
+├── .gitignore                      # Git ignore rules
+├── requirements.txt                # Python dependencies
 └── README.md
 ```
+
+## ⚙️ Configuration
+
+The application uses environment variables for configuration. Copy `.env.example` to `.env` and set the following:
+
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_KEY`: Your Supabase anonymous/service key
+- `MAX_FILE_SIZE_MB`: Maximum file size for downloads (default: 100MB)
+- `TEMP_DIR`: Directory for temporary files (default: /tmp)
+- `LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR)
 
 ## 🔮 Future Enhancements
 
@@ -94,6 +119,9 @@ clip-content-analyzer/
 - [ ] Web dashboard for viewing flagged content
 - [ ] Real-time processing with webhooks
 - [ ] Confidence scoring for moderation results
+- [ ] Unit and integration tests
+- [ ] Docker containerization
+- [ ] CI/CD pipeline
 
 ## 🤝 Contributing
 
