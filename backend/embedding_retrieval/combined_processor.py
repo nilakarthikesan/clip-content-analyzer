@@ -1,6 +1,6 @@
 import os
 import requests
-from moviepy import VideoFileClip
+from moviepy.editor import VideoFileClip
 from typing import List
 import numpy as np
 from PIL import Image
