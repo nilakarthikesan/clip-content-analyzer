@@ -6,7 +6,9 @@ import numpy as np
 from PIL import Image
 from supabase import create_client, Client
 from dotenv import load_dotenv
-import os
+import torch
+from transformers.models.clip.processing_clip import CLIPProcessor
+from transformers.models.clip.modeling_clip import CLIPModel
 
 load_dotenv()  # Loads variables from .env into environment
 
@@ -16,6 +18,12 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("SUPABASE_URL and/or SUPABASE_KEY are not set. Check your .env file and environment variables.")
 
+# Load CLIP model globally
+print("Loading CLIP model...")
+clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+print("✓ CLIP model loaded successfully")
+
 def get_supabase_client() -> Client:
     # Type assertion to tell the linter these are strings (we already checked they're not None)
     return create_client(SUPABASE_URL, SUPABASE_KEY)  # type: ignore
@@ -24,6 +32,21 @@ def fetch_media_clips():
     supabase = get_supabase_client()
     response = supabase.table('media_clips').select('*').execute()
     return response.data
+
+def get_image_embedding(image: Image.Image) -> np.ndarray:
+    """
+    Get CLIP embedding for a single image.
+    Returns a numpy array of the embedding vector.
+    """
+    # Process the image through CLIP processor
+    inputs = clip_processor(images=image, return_tensors="pt", padding=True)  # type: ignore
+    
+    # Get image features from CLIP model
+    with torch.no_grad():
+        image_features = clip_model.get_image_features(**inputs)  # type: ignore
+    
+    # Convert to numpy array and flatten
+    return image_features.numpy().flatten()
 
 def extract_frames_at_percentages(video_path: str, percentages: List[float] = [0.25, 0.5, 0.75]) -> List[Image.Image]:
     """
@@ -99,9 +122,23 @@ def process_all_clips():
                 print(f"Extracting frames from {clip['title']}...")
                 try:
                     frames = extract_frames_at_percentages(local_path)
-                    for i, img in enumerate(frames):
-                        img.save(f"{clip['id']}_frame_{i+1}.jpg")
                     print(f"✓ Extracted {len(frames)} frames for {clip['title']}")
+                    
+                    # Get embeddings for each frame
+                    print(f"Getting embeddings for {clip['title']}...")
+                    embeddings = []
+                    for i, img in enumerate(frames):
+                        # Save the frame
+                        img.save(f"{clip['id']}_frame_{i+1}.jpg")
+                        
+                        # Get embedding for this frame
+                        embedding = get_image_embedding(img)
+                        embeddings.append(embedding)
+                        print(f"  Frame {i+1} embedding: {embedding}")
+                    
+                    print(f"✓ Got {len(embeddings)} embeddings for {clip['title']}")
+                    print(f"  Embedding dimensions: {embeddings[0].shape if embeddings else 'None'}")
+                    
                 except Exception as frame_error:
                     print(f"✗ Frame extraction failed for {clip['title']}: {frame_error}")
             else:
@@ -110,9 +147,9 @@ def process_all_clips():
         except Exception as e:
             #print(f"✗ Failed to process {clip['title']}: {e}")
             print("failed to download video", )
-        # finally:
-        #     if os.path.exists(local_path):
-        #         os.remove(local_path)
+        finally:
+            if os.path.exists(local_path):
+                os.remove(local_path)
 
 if __name__ == "__main__":
     process_all_clips() 
