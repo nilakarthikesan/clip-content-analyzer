@@ -28,6 +28,10 @@ This project is a full-stack content moderation system that detects inappropriat
 - **Database Integration:** Connects to Supabase to fetch video metadata
 - **Temporary File Management:** Downloads videos to temp files, processes them, and cleans up
 - **Modular Design:** Separate functions for different processing steps
+- **Content Moderation:** CLIP-based detection of inappropriate content using text-image similarity
+- **Multi-category Detection:** Violence, sexual content, drugs, hate speech, self-harm
+- **Configurable Sensitivity:** Adjustable similarity thresholds for content flagging
+- **Detailed Reporting:** JSON reports with similarity scores and category breakdowns
 
 ## 📦 Installation
 
@@ -39,7 +43,7 @@ This project is a full-stack content moderation system that detects inappropriat
 
 2. **Install Python dependencies:**
    ```bash
-   pip install supabase moviepy requests pillow numpy
+   pip install -r requirements.txt
    ```
 
 3. **Set up Supabase:**
@@ -53,7 +57,7 @@ This project is a full-stack content moderation system that detects inappropriat
 
 ## 🛠️ Usage
 
-### Process All Clips
+### Process All Clips with Content Moderation
 ```bash
 python backend/embedding_retrieval/combined_processor.py
 ```
@@ -63,8 +67,37 @@ This will:
 2. Fetch all video clips
 3. Download each video to a temporary file
 4. Extract 3 frames (at 25%, 50%, 75% of duration)
-5. Save frames as images
-6. Clean up temporary files
+5. Generate CLIP embeddings for each frame
+6. Compare embeddings with inappropriate content keywords
+7. Save moderation results to JSON files
+8. Clean up temporary files
+
+### Test Content Moderation System
+```bash
+python backend/embedding_retrieval/test_moderation.py
+```
+
+This will run tests to demonstrate the content moderation functionality.
+
+### Content Moderation Configuration
+
+#### Adjusting Sensitivity
+```python
+from content_moderator import ContentModerator
+
+# Set similarity threshold (0.0 to 1.0, higher = more strict)
+moderator.set_similarity_threshold(0.8)  # Default is 0.7
+```
+
+#### Adding Custom Words
+```python
+# Add words to existing categories
+moderator.add_inappropriate_word("violence", "knife attack")
+moderator.add_inappropriate_word("violence", "street fight")
+
+# Add new categories
+moderator.add_inappropriate_word("custom_category", "inappropriate word")
+```
 
 ### Individual Components
 
@@ -78,22 +111,88 @@ This will:
 clip-content-analyzer/
 ├── backend/
 │   └── embedding_retrieval/
+│       ├── combined_processor.py   # Main processor with content moderation
+│       ├── content_moderator.py    # ContentModerator class
+│       ├── test_moderation.py      # Test script for moderation
 │       ├── supabase_client.py      # Database connection
 │       ├── frame_extractor.py      # Frame extraction logic
-│       ├── process_clips.py        # Video processing pipeline
-│       └── combined_processor.py   # All-in-one processor
+│       └── process_clips.py        # Video processing pipeline
+├── requirements.txt                # Python dependencies
 ├── .gitignore
 └── README.md
 ```
 
 ## 🔮 Future Enhancements
 
-- [ ] CLIP model integration for embedding extraction
-- [ ] Cosine similarity comparison with flagged keywords
+- [x] CLIP model integration for embedding extraction
+- [x] Cosine similarity comparison with flagged keywords
+- [x] Content moderation results stored in JSON files
 - [ ] Content moderation results stored in database
 - [ ] Web dashboard for viewing flagged content
 - [ ] Real-time processing with webhooks
 - [ ] Confidence scoring for moderation results
+- [ ] Batch processing for large datasets
+- [ ] Custom model fine-tuning for specific content types
+
+## 🛡️ Content Moderation Categories
+
+The system detects inappropriate content across multiple categories:
+
+### Violence
+- violence, fight, fighting, attack, assault, battle, war, combat
+- blood, bloody, gore, injury, wound, bruise, cut, stab, shoot
+- gun, rifle, pistol, weapon, knife, sword, bomb, explosion
+- death, dead, corpse, murder, kill, killing, homicide
+
+### Sexual Content
+- nude, naked, sexual, pornographic, explicit, adult content
+- intimate, provocative, suggestive
+
+### Drugs
+- drugs, cocaine, heroin, marijuana, weed, alcohol abuse
+- substance abuse, illegal drugs, drug paraphernalia
+
+### Hate Speech
+- hate, racist, discrimination, offensive, slur, bigotry
+- extremist, terrorist, hate speech
+
+### Self-Harm
+- self harm, suicide, cutting, self injury, self mutilation
+
+## 📊 Output Format
+
+The system generates detailed JSON reports for each processed clip:
+
+```json
+{
+  "clip_id": "123",
+  "clip_title": "Sample Video",
+  "frames_analyzed": 3,
+  "moderation_results": [
+    {
+      "frame": 1,
+      "filename": "123_frame_1.jpg",
+      "moderation": {
+        "flagged": false,
+        "max_similarity": 0.45,
+        "most_similar_content": "peaceful",
+        "categories": {
+          "violence": {
+            "max_similarity": 0.23,
+            "most_similar_word": "fight",
+            "flagged": false
+          },
+          "sexual": {
+            "max_similarity": 0.12,
+            "most_similar_word": "intimate",
+            "flagged": false
+          }
+        }
+      }
+    }
+  ]
+}
+```
 
 ## 🤝 Contributing
 

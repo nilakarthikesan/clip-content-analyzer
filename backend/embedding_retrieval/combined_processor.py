@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import torch
 from transformers.models.clip.processing_clip import CLIPProcessor
 from transformers.models.clip.modeling_clip import CLIPModel
+from content_moderator import ContentModerator
 
 load_dotenv()  # Loads variables from .env into environment
 
@@ -23,6 +24,11 @@ print("Loading CLIP model...")
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 print("✓ CLIP model loaded successfully")
+
+# Initialize content moderator
+print("Initializing content moderator...")
+content_moderator = ContentModerator(clip_model, clip_processor)
+print("✓ Content moderator initialized successfully")
 
 def get_supabase_client() -> Client:
     # Type assertion to tell the linter these are strings (we already checked they're not None)
@@ -47,6 +53,34 @@ def get_image_embedding(image: Image.Image) -> np.ndarray:
     
     # Convert to numpy array and flatten
     return image_features.numpy().flatten()
+
+def check_content_moderation(image_embedding: np.ndarray, clip_title: str) -> dict:
+    """
+    Check if an image contains inappropriate content.
+    
+    Args:
+        image_embedding: Image embedding to check
+        clip_title: Title of the clip for logging
+        
+    Returns:
+        Dictionary with moderation results
+    """
+    print(f"Checking content moderation for: {clip_title}")
+    moderation_results = content_moderator.check_image_content(image_embedding)
+    
+    if moderation_results["flagged"]:
+        print(f"⚠️  CONTENT FLAGGED for {clip_title}")
+        print(f"   Max similarity: {moderation_results['max_similarity']:.3f}")
+        print(f"   Most similar content: '{moderation_results['most_similar_content']}'")
+        
+        # Print category breakdown
+        for category, details in moderation_results["categories"].items():
+            if details["flagged"]:
+                print(f"   Category '{category}': {details['max_similarity']:.3f} (word: '{details['most_similar_word']}')")
+    else:
+        print(f"✓ Content OK for {clip_title} (max similarity: {moderation_results['max_similarity']:.3f})")
+    
+    return moderation_results
 
 def extract_frames_at_percentages(video_path: str, percentages: List[float] = [0.25, 0.5, 0.75]) -> List[Image.Image]:
     """
@@ -124,20 +158,44 @@ def process_all_clips():
                     frames = extract_frames_at_percentages(local_path)
                     print(f"✓ Extracted {len(frames)} frames for {clip['title']}")
                     
-                    # Get embeddings for each frame
-                    print(f"Getting embeddings for {clip['title']}...")
+                    # Get embeddings for each frame and check content moderation
+                    print(f"Getting embeddings and checking content for {clip['title']}...")
                     embeddings = []
+                    moderation_results = []
+                    
                     for i, img in enumerate(frames):
                         # Save the frame
-                        img.save(f"{clip['id']}_frame_{i+1}.jpg")
+                        frame_filename = f"{clip['id']}_frame_{i+1}.jpg"
+                        img.save(frame_filename)
                         
                         # Get embedding for this frame
                         embedding = get_image_embedding(img)
                         embeddings.append(embedding)
+                        
+                        # Check content moderation
+                        frame_moderation = check_content_moderation(embedding, f"{clip['title']} - Frame {i+1}")
+                        moderation_results.append({
+                            "frame": i+1,
+                            "filename": frame_filename,
+                            "moderation": frame_moderation
+                        })
+                        
                         print(f"  Frame {i+1} embedding: {embedding}")
                     
                     print(f"✓ Got {len(embeddings)} embeddings for {clip['title']}")
                     print(f"  Embedding dimensions: {embeddings[0].shape if embeddings else 'None'}")
+                    
+                    # Save moderation results to file
+                    import json
+                    moderation_filename = f"{clip['id']}_moderation_results.json"
+                    with open(moderation_filename, 'w') as f:
+                        json.dump({
+                            "clip_id": clip['id'],
+                            "clip_title": clip['title'],
+                            "frames_analyzed": len(frames),
+                            "moderation_results": moderation_results
+                        }, f, indent=2)
+                    print(f"✓ Saved moderation results to {moderation_filename}")
                     
                 except Exception as frame_error:
                     print(f"✗ Frame extraction failed for {clip['title']}: {frame_error}")
